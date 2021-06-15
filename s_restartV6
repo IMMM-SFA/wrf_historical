@@ -1,0 +1,404 @@
+#!/bin/bash
+
+#RESTART SCRIPT (s_restartV4)
+#1. check rst: read last file date
+#2. check namelist: read start date and time step
+#3. compare start date on namelist and rst
+#    1. if start date on namelist and rst date are the same
+#        1. if time step is 60 sec
+#            1. update namelist: time step to 30 sec
+#        2. if time step is 30 sec
+#            1. remove the last rst
+#            2. check rst: read new last file date
+#            3. update namelist: start date to rst (also if start time is 3/25/xx or 12/24/xx change run_days to 8 from 7 and restart_interval to 11520 from 10080)
+#            4. link to the input files corresponding to the new date
+#    2. if start date on namelist and rst date are NOT the same
+#        1. if time step is 60 sec
+#            1. update namelist: start date to rst (also if start time is 3/25/xx or 12/24/xx change run_days to 8 from 7 and restart_interval to 11520 from 10080)
+#            2. link to the input files corresponding to the new date
+#        2. if time step is 30 sec
+#            1. update namelist: time step to 60 sec
+#            2. update namelist: start date to rst (also if start time is 3/25/xx or 12/24/xx change run_days to 8 from 7 and restart_interval to 11520 from 10080)
+#            3. link to the input files corresponding to the new date
+#cp -rL /project/projectdirs/m1517/Pouya/PROJECT_2021_IM3_Phase_2/WRF/WRFv421_v4ghg_fast/test/em_real/* .
+#rm CAMtr_volume_mixing_ratio
+#ln -sf CAMtr_volume_mixing_ratio.CMIP6_historical_Pouya CAMtr_volume_mixing_ratio 
+
+#STEP1: check rst: read last file date
+#get the last restart file name
+ls -l wrfrst_d01_* >& s_temp_ll
+last_rst=`tail -1 "s_temp_ll"`
+rm s_temp_ll
+#get the date of last restart file from its name
+last_rst_year=${last_rst:$((${#last_rst}-19)):4}
+last_rst_month=${last_rst:$((${#last_rst}-14)):2}
+last_rst_day=${last_rst:$((${#last_rst}-11)):2}
+last_rst_hour=${last_rst:$((${#last_rst}-8)):2}
+echo "STEP1: last rst file date: $last_rst_year $last_rst_month $last_rst_day"
+
+
+
+#STEP2: check namelist: read start date and time step
+#get the start date from namelist file
+line_year="`sed -n 6p namelist.input`";
+namelist_year=${line_year:39:4};
+line_month="`sed -n 7p namelist.input`";
+namelist_month=${line_month:39:2};
+line_day="`sed -n 8p namelist.input`";
+namelist_day=${line_day:39:2};
+line_timestep="`sed -n 39p namelist.input`";
+namelist_timestep=${line_timestep:39:2};
+echo "STEP2: namelist file date: $namelist_year $namelist_month $namelist_day"
+echo "STEP2: namelist time step: $namelist_timestep"
+
+
+#STEP3: compare start date on namelist and rst
+if [ $last_rst_year -eq $namelist_year ] &&  [ $last_rst_month -eq $namelist_month ] && [ $last_rst_day -eq $namelist_day ] 
+then
+
+
+#STEP3.1: if start date on namelist and rst date are the same	
+echo "STEP3.1: start date on namelist and rst date are the same"
+
+
+#STEP3.1.1: if time step is 60 sec
+if [ $namelist_timestep -eq 60 ]
+then
+echo "STEP3.1.1: time step is 60 sec"
+#sed -i "s/time_step                           = 60,/time_step                           = 30,/g" namelist.input
+sed -i "s/use_adaptive_time_step              = .true.,/use_adaptive_time_step              = .false.,/g" namelist.input
+#sed -i "s/radt                                = 12,    12,    12,/radt                                = 00,    00,    00,/g" namelist.input
+echo "STEP3.1.1.1: update namelist: adaptive timestep to off"
+#echo "STEP3.1.1.1: update namelist: time step to 30 sec, adaptive timestep to off,  rdat to 00"
+
+#STEP3.1.2: if time step is 30 sec
+elif [ $namelist_timestep -eq 30 ]
+then
+echo "STEP3.1.2: time step is 30 sec"
+#remove the last rst
+mv wrfrst_d01_"$last_rst_year"-"$last_rst_month"-"$last_rst_day"_"$last_rst_hour":00:00 zwrfrst_d01_"$last_rst_year"-"$last_rst_month"-"$last_rst_day"_"$last_rst_hour":00:00
+echo "STEP3.1.2.1: remove the last rst dating: $last_rst_year $last_rst_month $last_rst_day $last_rst_hour"
+#get the last restart file name after removing the previouly last restart file
+ls -l wrfrst_d01_* >& s_temp_ll
+last_rst=`tail -1 "s_temp_ll"`
+rm s_temp_ll
+#get the date of last restart file from its name
+last_rst_year=${last_rst:$((${#last_rst}-19)):4}
+last_rst_month=${last_rst:$((${#last_rst}-14)):2}
+last_rst_day=${last_rst:$((${#last_rst}-11)):2}
+last_rst_hour=${last_rst:$((${#last_rst}-8)):2}
+echo "STEP3.1.2.2: check rst: read new last file date: $last_rst_year $last_rst_month $last_rst_day $last_rst_hour"
+#update namelist
+sed -i "s/start_year                          = $namelist_year,/start_year                          = $last_rst_year,/g" namelist.input
+sed -i "s/start_month                         = $namelist_month,/start_month                         = $last_rst_month,/g" namelist.input
+sed -i "s/start_day                           = $namelist_day,/start_day                           = $last_rst_day,/g" namelist.input
+echo "STEP3.1.2.3: update namelist: start date to rst "
+#if start time is 3/25/xx or 12/24/xx change run_days to 8 from 7 and restart_interval to 11520 from 10080
+if [ $last_rst_month$last_rst_day -eq 0325 ] || [ $last_rst_month$last_rst_day -eq 1224 ]
+then
+sed -i "s/run_days                            = 7,/run_days                            = 8,/g" namelist.input
+sed -i "s/restart_interval                    = 10080,/restart_interval                    = 11520,/g" namelist.input
+echo "updated run_days to 8 from 7 and restart_interval to 11520 from 10080"
+else
+sed -i "s/run_days                            = 8,/run_days                            = 7,/g" namelist.input
+sed -i "s/restart_interval                    = 11520,/restart_interval                    = 10080,/g" namelist.input
+echo "made sure run_days to is 7 and restart_interval is 10080"
+fi
+#STEP3.1.2.4: link to the input files corresponding to the new date
+rm wrfbdy_d01 wrffdda_d01 wrflowinp_d01
+if [ $last_rst_month -eq 01 ] || [ $last_rst_month -eq 02 ] || [ $last_rst_month -eq 03 ]
+then
+if [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-mar ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-mar/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-mar/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-mar/wrflowinp_d01 .
+echo "STEP3.1.2.4: link to jan-mar input files"
+elif [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrflowinp_d01 .
+echo "STEP3.1.2.4: link to jan-jun input files"
+else
+echo "STEP3.1.2.4: CANNOT link to jan-mar or jan-jun input files"
+fi
+elif [ $last_rst_month -eq 04 ] || [ $last_rst_month -eq 05 ] || [ $last_rst_month -eq 06 ]
+then
+if [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/apr-jun ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/apr-jun/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/apr-jun/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/apr-jun/wrflowinp_d01 .
+echo "STEP3.1.2.4: link to apr-jun input files"
+elif [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrflowinp_d01 .
+echo "STEP3.1.2.4: link to jan-jun input files"
+else
+echo "STEP3.1.2.4: CANNOT link to apr-jun or jan-jun input files"
+fi
+elif [ $last_rst_month -eq 07 ] || [ $last_rst_month -eq 08 ] || [ $last_rst_month -eq 09 ]
+then
+if [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-sep ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-sep/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-sep/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-sep/wrflowinp_d01 .
+echo "STEP3.1.2.4: link to jul-sep input files"
+elif [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrflowinp_d01 .
+echo "STEP3.1.2.4: link to jul-dec input files"
+else
+echo "STEP3.1.2.4: CANNOT link to jul-sep or jul-dec input files"
+fi
+elif [ $last_rst_month -eq 10 ] || [ $last_rst_month -eq 11 ] || [ $last_rst_month -eq 12 ]
+then
+if [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/oct-dec ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/oct-dec/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/oct-dec/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/oct-dec/wrflowinp_d01 .
+echo "STEP3.1.2.4: link to oct-dec input files"
+elif [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrflowinp_d01 .
+echo "STEP3.1.2.4: link to jul-dec input files"
+else 
+echo "STEP3.1.2.4: CANNOT link to oct-dec or jul-dec input files"
+fi
+#STEP3.1.2.4: fi
+fi
+
+
+#STEP3.1.3: sanity check
+else
+echo "STEP3.1.3: Time step is neither 30 or 60 sec"
+exit
+
+
+#fi for STEP3.1
+fi
+
+
+#STEP3.2: if start date on namelist and rst date are the NOT same
+else
+echo "STEP3.2:start date on namelist and rst date are NOT the same"
+
+
+#STEP3.2.1: if time step is 60 sec
+if [ $namelist_timestep -eq 60 ]
+then
+echo "STEP3.2.1: time step is 60 sec"
+sed -i "s/use_adaptive_time_step              = .false.,/use_adaptive_time_step              = .true.,/g" namelist.input
+echo "STEP3.2.1.1: update namelist: adaptive timestep to on"
+
+#update namelist
+sed -i "s/start_year                          = $namelist_year,/start_year                          = $last_rst_year,/g" namelist.input
+sed -i "s/start_month                         = $namelist_month,/start_month                         = $last_rst_month,/g" namelist.input
+sed -i "s/start_day                           = $namelist_day,/start_day                           = $last_rst_day,/g" namelist.input
+echo "STEP3.2.1.1: update namelist: start date to rst "
+#if start time is 3/25/xx or 12/24/xx change run_days to 8 from 7 and restart_interval to 11520 from 10080
+if [ $last_rst_month$last_rst_day -eq 0325 ] || [ $last_rst_month$last_rst_day -eq 1224 ]
+then
+sed -i "s/run_days                            = 7,/run_days                            = 8,/g" namelist.input
+sed -i "s/restart_interval                    = 10080,/restart_interval                    = 11520,/g" namelist.input
+echo "updated run_days to 8 from 7 and restart_interval to 11520 from 10080"
+else 
+sed -i "s/run_days                            = 8,/run_days                            = 7,/g" namelist.input
+sed -i "s/restart_interval                    = 11520,/restart_interval                    = 10080,/g" namelist.input
+echo "made sure run_days to is 7 and restart_interval is 10080"
+fi
+#STEP3.2.1.2: link to the input files corresponding to the new date
+rm wrfbdy_d01 wrffdda_d01 wrflowinp_d01
+if [ $last_rst_month -eq 01 ] || [ $last_rst_month -eq 02 ] || [ $last_rst_month -eq 03 ]
+then
+if [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-mar ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-mar/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-mar/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-mar/wrflowinp_d01 .
+echo "STEP3.2.1.2: link to jan-mar input files"
+elif [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrflowinp_d01 .
+echo "STEP3.2.1.2: link to jan-jun input files"
+else
+echo "STEP3.2.1.2: CANNOT link to jan-mar or jan-jun input files"
+fi
+elif [ $last_rst_month -eq 04 ] || [ $last_rst_month -eq 05 ] || [ $last_rst_month -eq 06 ]
+then
+if [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/apr-jun ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/apr-jun/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/apr-jun/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/apr-jun/wrflowinp_d01 .
+echo "STEP3.2.1.2: link to apr-jun input files"
+elif [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrflowinp_d01 .
+echo "STEP3.2.1.2: link to jan-jun input files"
+else
+echo "STEP3.2.1.2: CANNOT link to apr-jun or jan-jun input files"
+fi
+elif [ $last_rst_month -eq 07 ] || [ $last_rst_month -eq 08 ] || [ $last_rst_month -eq 09 ]
+then
+if [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-sep ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-sep/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-sep/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-sep/wrflowinp_d01 .
+echo "STEP3.2.1.2: link to jul-sep input files"
+elif [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrflowinp_d01 .
+echo "STEP3.2.1.2: link to jul-dec input files"
+else
+echo "STEP3.2.1.2: CANNOT link to jul-sep or jul-dec input files"
+fi
+elif [ $last_rst_month -eq 10 ] || [ $last_rst_month -eq 11 ] || [ $last_rst_month -eq 12 ]
+then
+if [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/oct-dec ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/oct-dec/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/oct-dec/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/oct-dec/wrflowinp_d01 .
+echo "STEP3.2.1.2: link to oct-dec input files"
+elif [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrflowinp_d01 .
+echo "STEP3.2.1.2: link to jul-dec input files"
+else
+echo "STEP3.2.1.2: CANNOT link to oct-dec or jul-dec input files"
+fi
+#STEP3.2.1.2: fi
+fi
+
+
+#STEP3.2.2: if time step is 30 sec
+elif [ $namelist_timestep -eq 30 ]
+then
+echo "STEP3.2.2: time step is 30 sec"
+#update namelist
+sed -i "s/time_step                           = 30,/time_step                           = 60,/g" namelist.input
+sed -i "s/use_adaptive_time_step              = .false.,/use_adaptive_time_step              = .true.,/g" namelist.input
+sed -i "s/ radt                                = 00,    00,    00,/ radt                                = 12,    12,    12,/g" namelist.input
+echo "STEP3.2.2.1: update namelist: time step to 60 sec, adaptive timestep to on,  rdat to 12"
+
+sed -i "s/start_year                          = $namelist_year,/start_year                          = $last_rst_year,/g" namelist.input
+sed -i "s/start_month                         = $namelist_month,/start_month                         = $last_rst_month,/g" namelist.input
+sed -i "s/start_day                           = $namelist_day,/start_day                           = $last_rst_day,/g" namelist.input
+echo "STEP3.2.2.2: update namelist: start date to rst "
+#if start time is 3/25/xx or 12/24/xx change run_days to 8 from 7 and restart_interval to 11520 from 10080
+if [ $last_rst_month$last_rst_day -eq 0325 ] || [ $last_rst_month$last_rst_day -eq 1224 ]
+then
+sed -i "s/run_days                            = 7,/run_days                            = 8,/g" namelist.input
+sed -i "s/restart_interval                    = 10080,/restart_interval                    = 11520,/g" namelist.input
+echo "updated run_days to 8 from 7 and restart_interval to 11520 from 10080"
+else 
+sed -i "s/run_days                            = 8,/run_days                            = 7,/g" namelist.input
+sed -i "s/restart_interval                    = 11520,/restart_interval                    = 10080,/g" namelist.input
+echo "made sure run_days to is 7 and restart_interval is 10080"
+fi
+#STEP3.2.2.3: link to the input files corresponding to the new date
+rm wrfbdy_d01 wrffdda_d01 wrflowinp_d01
+if [ $last_rst_month -eq 01 ] || [ $last_rst_month -eq 02 ] || [ $last_rst_month -eq 03 ]
+then
+if [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-mar ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-mar/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-mar/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-mar/wrflowinp_d01 .
+echo "STEP3.2.2.3: link to jan-mar input files"
+elif [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrflowinp_d01 .
+echo "STEP3.2.2.3: link to jan-jun input files"
+else
+echo "STEP3.2.2.3: CANNOT link to jan-mar or jan-jun input files"
+fi
+elif [ $last_rst_month -eq 04 ] || [ $last_rst_month -eq 05 ] || [ $last_rst_month -eq 06 ]
+then
+if [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/apr-jun ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/apr-jun/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/apr-jun/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/apr-jun/wrflowinp_d01 .
+echo "STEP3.2.2.3: link to apr-jun input files"
+elif [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jan-jun/wrflowinp_d01 .
+echo "STEP3.2.2.3: link to jan-jun input files"
+else
+echo "STEP3.2.2.3: CANNOT link to apr-jun or jan-jun input files"
+fi
+elif [ $last_rst_month -eq 07 ] || [ $last_rst_month -eq 08 ] || [ $last_rst_month -eq 09 ]
+then
+if [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-sep ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-sep/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-sep/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-sep/wrflowinp_d01 .
+echo "STEP3.2.2.3: link to jul-sep input files"
+elif [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrflowinp_d01 .
+echo "STEP3.2.2.3: link to jul-dec input files"
+else
+echo "STEP3.2.2.3: CANNOT link to jul-sep or jul-dec input files"
+fi
+elif [ $last_rst_month -eq 10 ] || [ $last_rst_month -eq 11 ] || [ $last_rst_month -eq 12 ]
+then
+if [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/oct-dec ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/oct-dec/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/oct-dec/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/oct-dec/wrflowinp_d01 .
+echo "STEP3.2.2.3: link to oct-dec input files"
+elif [ -d /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec ]
+then
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrfbdy_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrffdda_d01 .
+ln -sf /global/cscratch1/sd/rastogi/WRF/wrf_inputfiles_histruns/$last_rst_year/jul-dec/wrflowinp_d01 .
+echo "STEP3.2.2.3: link to jul-dec input files"
+else
+echo "STEP3.2.2.3: CANNOT link to oct-dec or jul-dec input files"
+fi
+#STEP3.2.2.3: fi
+fi
+
+
+#STEP3.2.3: sanity check
+else
+echo "STEP3.2.3: Time step is neither 30 or 60 sec"
+exit
+
+
+#fi for STEP3.2
+fi
+
+
+#fi for STEP3
+fi
+
