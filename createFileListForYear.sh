@@ -3,8 +3,6 @@
 year=$1
 path=$SCRATCH/WRF_CLIMATE
 
-invariant="/ds633.0/e5.oper.invariant/197901/e5.oper.invariant.128_172_lsm.ll025sc.1979010100_1979010100.grb"
-
 declare -a pl_files=(
   "129_z.ll025sc"
   "130_t.ll025sc"
@@ -37,8 +35,6 @@ declare -a sfc_files=(
 
 mkdir -p $path/$year/jan-jun
 mkdir -p $path/$year/jul-dec
-echo $invariant > $path/$year/transfer_jan-jun.txt
-echo $invariant > $path/$year/transfer_jul-dec.txt
 for grb in "${pl_files[@]}"
 do
   d=$year-01-01
@@ -89,4 +85,4 @@ do
 done
 
 transfer_files.py -s 1e128d3c-852d-11e8-9546-0a6d4e044368 -t dtn -i $path/$year/transfer_jan-jun.txt -d $path/$year/jan-jun
-
+transfer_files.py -s 1e128d3c-852d-11e8-9546-0a6d4e044368 -t dtn -i $path/$year/transfer_jul-dec.txt -d $path/$year/jul-dec

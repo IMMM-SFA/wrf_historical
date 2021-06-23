@@ -31,7 +31,7 @@
   * `geog_data_res = 'nlcd2011_9s+modis_fpar+modis_lai+NUDAPT44_1km','nlcd2011_9s+modis_fpar+modis_lai+NUDAPT44_1km','nlcd2011_9s+modis_fpar+modis_lai+NUDAPT44_1km','nlcd2011_9s+modis_fpar+modis_lai+NUDAPT44_1km',`
   * `dx = 12000,`
   * `dy = 12000,`
-  * map_proj = 'lambert',
+  * `map_proj = 'lambert'`,
   * `ref_lat   =  40.0,`
   * `ref_lon   = -97.0,`
   * `truelat1  =  30.0,`
@@ -41,21 +41,28 @@
   * `fg_name = 'FILE', 'SST'`
   * `constants_name = 'FIX:1979-01-01_00'`
 
+4. Download and process the time invariant ERA5 grib files:
+  * On NERSC, run `module load globus-tools` to acess the Globus utilities
+  * Run the script `downloadInvariantFiles.sh` to create a Globus task for downloading the time invariant files
+  * If you haven't used the Globus tools before, there will be a step to authorize NERSC to use your Globus account
+  *
+
 4. Download the relevant ERA5 grib files for the year you want to simulate:
-  * On NERSC, can use the `module load globus-tools` to download with globus
-  * Run the script `createFileList.sh <year>` to create a list of ERA5 files needed for that year, which will create `$SCRATCH/WRF_CLIMATE/<year>/transfer_jan-jun.txt` and `$SCRATCH/WRF_CLIMATE/<year>/transfer_jul-dec.txt`
+  * On NERSC, run `module load globus-tools` to access the Globus utilities
+  * Run the script `createFileListForYear.sh <year>` to create a list of ERA5 files needed for that year, which will create `$SCRATCH/WRF_CLIMATE/<year>/transfer_jan-jun.txt` and `$SCRATCH/WRF_CLIMATE/<year>/transfer_jul-dec.txt`
   * To download data for Jan-Jun of that year, run `transfer_files.py -s 1e128d3c-852d-11e8-9546-0a6d4e044368 -t dtn -i $SCRATCH/WRF_CLIMATE/<year>/transfer_jan-jun.txt -d $SCRATCH/WRF_CLIMATE/<year>/jan-jun`
-  * This will create a globus task which will eventually succeed
+  * This will create a Globus task which will eventually succeed and notify you by email
+  * Repeat for `jul-dec`
 
 5. Copy the entire `WPS-4.0.1` directory to a 6-month-specific directory and configure the 6-month-specific options:
-  * For example `cp -r WPS-4.0.1 WPS_<year>_jan-jun`
+  * `cp -r WPS-4.0.1 WPS_<year>_jan-jun`
   * Repeat for `jul-dec`
 
 6. Perform the WPS preprocessing:
   * `cd WPS_<year>_jan-jun`
   * Set the prefix in `namelist.wps` to 'FIX':
     * `prefix = 'FIX'`
-  * 
+  *
   *
   * Link the ERA5 forcing data for this 6 month period:
     * `./link_grib.csh $SCRATCH/WRF_CLIMATE/<year>/jan-jun/*grb`
