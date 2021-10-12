@@ -77,6 +77,7 @@ do
     echo "/ds633.0/e5.oper.an.sfc/$ym/e5.oper.an.sfc.128_$grb.${start}00_${end}23.grb" >> $path/$year/transfer_jul-dec.txt
     d=$(date -I -d "$d + 1 day")
   done
+  ym=$(date -d $d +%Y%m)
   start=$(date -d $d +%Y%m%d)
   d=$(date -I -d "$d + 1 month")
   d=$(date -I -d "$d - 1 day")
@@ -84,5 +85,3 @@ do
   echo "/ds633.0/e5.oper.an.sfc/$ym/e5.oper.an.sfc.128_$grb.${start}00_${end}23.grb" >> $path/$year/transfer_jul-dec.txt
 done
 
-transfer_files.py -s 1e128d3c-852d-11e8-9546-0a6d4e044368 -t dtn -i $path/$year/transfer_jan-jun.txt -d $path/$year/jan-jun
-transfer_files.py -s 1e128d3c-852d-11e8-9546-0a6d4e044368 -t dtn -i $path/$year/transfer_jul-dec.txt -d $path/$year/jul-dec

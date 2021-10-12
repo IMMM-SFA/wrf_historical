@@ -1,0 +1,17 @@
+#!/usr/bin/env /bin/bash
+#SBATCH -J Metgrid
+#SBATCH -p regular
+#SBATCH -N 1
+#SBATCH --gres=craynetwork:2
+#SBATCH -t 12:00:00
+#SBATCH -C haswell
+#SBATCH -A m2702
+time
+date
+cd $SCRATCH/WRF_CLIMATE/WPS_$1_jan-jun
+srun -n 1 -c 2 --mem=50000 --gres=craynetwork:1  ./metgrid.exe >& metgrid_cori.log &
+cd $SCRATCH/WRF_CLIMATE/WPS_$1_jul-dec
+srun -n 1 -c 2 --mem=50000 --gres=craynetwork:1  ./metgrid.exe >& metgrid_cori.log &
+wait
+time
+date
