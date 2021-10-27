@@ -4,9 +4,9 @@
 #SBATCH -N 6
 #SBATCH -t 23:00:00
 #SBATCH -C knl
-#SBATCH -A m2702
+#SBATCH -A <account id>
 time
 date
-srun -n 192 ./real.exe 
+srun -n 192 ./real.exe
 time
 date

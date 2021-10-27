@@ -5,7 +5,7 @@
 #SBATCH --gres=craynetwork:2
 #SBATCH -t 16:00:00
 #SBATCH -C haswell
-#SBATCH -A m2702
+#SBATCH -A <account id>
 time
 date
 cd $SCRATCH/WRF_CLIMATE/WPS_$1_jan-jun

@@ -1,13 +1,13 @@
-#!/bin/bash 
-#SBATCH -N 1
-#SBATCH --time=02:00:00
+#!/bin/bash
+#SBATCH -N 7
+#SBATCH --time=10:00:00
 #SBATCH --export=ALL
-#SBATCH -p regular 
+#SBATCH -p regular
 #SBATCH -L SCRATCH
 #SBATCH -C knl
 #SBATCH -J wrf_conus
 #SBATCH -o wrf_conus.o%j
-#SBATCH -A m2702
+#SBATCH -A <account id>
 
 date
 
@@ -29,6 +29,6 @@ module load jasper
 export JASPERLIB=/global/common/cori/software/jasper/1.900.1/hsw/intel/lib
 export JASPERINC=/global/common/cori/software/jasper/1.900.1/hsw/intel/include
 
-srun ./wrf.exe
+srun -n 112 -c 4 --cpu_bind=cores ./wrf.exe
 
 date

@@ -32,6 +32,10 @@
         1. `module load jasper`
         1. `export JASPERLIB=/global/common/cori/software/jasper/1.900.1/hsw/intel/lib`
         1. `export JASPERINC=/global/common/cori/software/jasper/1.900.1/hsw/intel/include`
+    1. Update the max history fields value:
+        1. Open the file `frame/module_domain.F` with an editor and search for `max_hst_mods = 200`
+        1. Update the value from 200 to 2000
+        1. Save the file
     1. `./configure`
         1. On NERSC, choose architecture 70 for INTEL KNL MIC (dmpar)
         1. Choose 1=basic
@@ -196,3 +200,5 @@
         1. `cp run_wrf.sl $SCRATCH/WRF_CLIMATE/WRF-4.2.1/test/em_real/`
     1. Submit the job with:
         1. `sbatch run_wrf.sl`
+    1. The output data will populate in this directory for both 1-hour resolution for a few variables, and 3-hour resolution for many variables.
+1. For the full experiment, WRF must run for a year of warmup (1979). After each 6 months of input data has been run through WRF, the new data must be linked and WRF restarted from the latest restart file. See the file `s_restartV6` for techniques on automating the restart process and adapting the timestep when necessary.

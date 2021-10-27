@@ -3,7 +3,7 @@
 #SBATCH -N 1
 #SBATCH -t 00:30:00
 #SBATCH -C haswell
-#SBATCH -A m2702
+#SBATCH -A <account id>
 
 time
 date
@@ -14,4 +14,3 @@ srun -n 1 ./geogrid.exe >& geogrid_cori.log
 
 time
 date
-
