@@ -137,7 +137,7 @@
     1. Submit the job with:
         1. `sbatch ungrib_cori.sl_year <year>`
     1. When the job completes, make sure the `WPS_<year>_<months>` directories have the three-hourly files that look like `FILE:<date>_<time>`
-1. Perform the second WPS preprocessing: (TODO maybe not necessary)
+1. Perform the second WPS preprocessing:
     1. `cd $SCRATCH/WRF_CLIMATE/WPS_<year>_jan-jun`
     1. Link the SST VTable:
         1. `ln -sf ./ungrib/Variable_Tables/Vtable.SST Vtable`
