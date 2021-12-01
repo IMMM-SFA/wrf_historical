@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5748047.svg)](https://doi.org/10.5281/zenodo.5748047)
+
 
 1. Download and compile WRFv4.0.1 (which will be used for metgrid):
     1. `cd $SCRATCH/WRF_CLIMATE`
