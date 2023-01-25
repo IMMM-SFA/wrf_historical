@@ -1,5 +1,6 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5748047.svg)](https://doi.org/10.5281/zenodo.5748047)
 
+This workflow describes the steps undertaken to prepare input data and run the WRF model in support of generating data for the historical scenario of the [Thermodynamic Global Warming Simulations](https://tgw-data.msdlive.org/) dataset for the [Jones et al 2023 paper](https://github.com/IMMM-SFA/jones-etal_2023_scidata/blob/main/README.md).
 
 1. Download and compile WRFv4.0.1 (which will be used for metgrid):
     1. `cd $SCRATCH/WRF_CLIMATE`
