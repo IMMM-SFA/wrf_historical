@@ -9,9 +9,10 @@
     1. Load important modules:
         1. You may need to unload some other modules first
         1. `module load craype-haswell`
+        1. `module load cray-netcdf`
         1. `module load impi`
     1. `./configure`
-        1. On NERSC, you first need to set the NETCDF environment variable: `export NETCDF=/opt/cray/pe/netcdf/default/INTEL/19.0`
+        1. On NERSC, you first need to set the NETCDF environment variable: `export NETCDF=${NETCDF_DIR}`
         1. On NERSC, choose architecture 66 for Intel HSW (dmpar)
         1. Choose 1=basic
     1. `./compile wrf`
@@ -59,8 +60,6 @@
     1. `./configure`
         1. On NERSC, you first need to set the NETCDF environment variable: `export NETCDF=${NETCDF_DIR}`
         1. On NERSC, choose architecture 39: "Cray XC CLE/Linux x86_64, Intel compiler"
-    1. Set the path to the WRF installation:
-        1. In `configure.wps`, add a line around line 56 like: `WRF_DIR = ../WRF-4.2.1`
     1. `./compile`
 1. Download the static WRF geographical data from https://www2.mmm.ucar.edu/wrf/users/download/get_sources_wps_geog.html. All the relevant links are:
       1. https://www2.mmm.ucar.edu/wrf/src/wps_files/geog_high_res_mandatory.tar.gz
@@ -96,10 +95,11 @@
     1. Submit the job with:
         1. `sbatch geogrid_cori.sl`
     1. When the job completes, confirm that the file `geo_em.d01.nc` was created in the `WPS-4.0.1` directory and is about 25 MB
-1. Download and process the time invariant ERA5 grib files:
-    1. On NERSC, run `module load globus-tools` to access the Globus utilities
-    1. Run the script `downloadInvariantFiles.sh` to create a Globus task for downloading the time invariant files to `$SCRATCH/WRF_CLIMATE/invariant`
-    1. If you haven't used the Globus tools before, there will be a step to authorize NERSC to use your Globus account
+1. Download and process the time invariant ERA5 grib file:
+    1. Visit https://rda.ucar.edu/datasets/ds633.0/index.html#sfol-wl-/data/ds633.0?g=20
+    1. You may need to create an account with NCAR RDA
+    1. Download the file: e5.oper.invariant.128_172_lsm.ll025sc.1979010100_1979010100.grb
+    1. Place this file in the directory: $SCRATCH/WRF_CLIMATE/invariant/
     1. `cd $SCRATCH/WRF_CLIMATE/WPS-4.0.1`
     1. Link the invariant files:
         1. `./link_grib.csh $SCRATCH/WRF_CLIMATE/invariant/*grb`
@@ -179,7 +179,7 @@
     1. Submit the job with:
         1. `sbatch run_real.sl`
     1. When the job completes, check the log files for errors and make sure the files `wrfbdy_d01`, `wrffdda_d01`, `wrfinput_d01`, and `wrflowinp_d01` exist in the folder
-    1. Repeat the above steps for the other set of <months>.
+    1. Repeat the above steps for the other set of \<months\>.
 1. Download the GHG concentration data from https://esgf-node.llnl.gov/search/input4mips/:
     1. On NERSC, run `module load globus-tools` to access the Globus utilities
     1. Run the script `downloadGHGFiles.sh` to create a Globus task for downloading the time invariant files to `$SCRATCH/WRF_CLIMATE/GHG`
