@@ -92,7 +92,7 @@ This workflow describes the steps undertaken to prepare input data and run the W
     1. `truelat2  =  45.0,`
     1. `stand_lon = -97.0,`
     1. `geog_data_path = '$SCRATCH/WRF_CLIMATE/GEOGRAPHY',` (replace with directory from step 3!)
-    1. `fg_name = 'FILE', 'SST',`
+    1. `fg_name = 'FILE',`
     1. `constants_name = 'FIX:1979-01-01_00',`
 1. Generate the grid file:
     1. Submit the job with:
@@ -128,7 +128,7 @@ This workflow describes the steps undertaken to prepare input data and run the W
 1. Copy the entire `WPS-4.0.1` directory to a 6-month-specific directories:
     1. `cp -r $SCRATCH/WRF_CLIMATE/WPS-4.0.1 $SCRATCH/WRF_CLIMATE/WPS_<year>_jan-jun`
     1. `cp -r $SCRATCH/WRF_CLIMATE/WPS-4.0.1 $SCRATCH/WRF_CLIMATE/WPS_<year>_jul-dec`
-1. Perform the first WPS preprocessing:
+1. Perform the WPS preprocessing:
     1. `cd $SCRATCH/WRF_CLIMATE/WPS_<year>_jan-jun`
     1. Link the ERA5 forcing data for this 6 month period:
         1. `./link_grib.csh $SCRATCH/WRF_CLIMATE/<year>/jan-jun/*grb`
@@ -142,16 +142,6 @@ This workflow describes the steps undertaken to prepare input data and run the W
     1. Submit the job with:
         1. `sbatch ungrib_cori.sl_year <year>`
     1. When the job completes, make sure the `WPS_<year>_<months>` directories have the three-hourly files that look like `FILE:<date>_<time>`
-1. Perform the second WPS preprocessing:
-    1. `cd $SCRATCH/WRF_CLIMATE/WPS_<year>_jan-jun`
-    1. Link the SST VTable:
-        1. `ln -sf ./ungrib/Variable_Tables/Vtable.SST Vtable`
-    1. Update the `namelist.wps`:
-        1. set `prefix = 'SST',`
-    1. Repeat the above steps for `jul-dec`
-    1. Submit the job again with:
-        1. `sbatch ungrib_cori.sl_year <year>`
-    1. When the job completes, make sure the `WPS_<year>_<months>` directories have the three-hourly files that look like `SST:<date>_<time>`
 1. Generate the metgrid files:
     1. Submit the job with:
         1. `sbatch metgrid_cori.sl_year <year>`
