@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5748047.svg)](https://doi.org/10.5281/zenodo.5748047)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7598973.svg)](https://doi.org/10.5281/zenodo.7598973)
 
 ### TGW WRF Workflow
 
