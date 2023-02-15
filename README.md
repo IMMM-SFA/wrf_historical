@@ -42,6 +42,8 @@ This workflow describes the steps undertaken to prepare input data and run the W
         1. Open the file `frame/module_domain.F` with an editor and search for `max_hst_mods = 200`
         1. Update the value from 200 to 2000
         1. Save the file
+    1. Fix adaptive timestep bug:
+        1. Update the file `dyn_em/adapt_timestep_em.F` following the diff [here](https://github.com/wrf-model/WRF/commit/b71e0a837626d3809ec6).
     1. `./configure`
         1. On NERSC, choose architecture 70 for INTEL KNL MIC (dmpar)
         1. Choose 1=basic
